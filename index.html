@@ -56,7 +56,11 @@
       z-index: 999;
       position: relative;
       display: none;
-      text-shadow: 2px 2px 4px #000;
+      background-color: rgba(0, 0, 0, 0.6); /* fundo preto com transparência */
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+      max-width: 600px;
     }
 
     a.comment-link {
@@ -92,11 +96,11 @@
 
   <div id="countdown">5</div>
 
-  <audio id="confettiSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_8b89e8e48e.mp3?filename=party-horn-81830.mp3"></audio>
+  <!-- Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
   <script>
-    const apiKey = 'AIzaSyBmxmaGbI-oHnvbjTv_BXwYuHSGIqTj2UE'; // Sua API
+    const apiKey = 'AIzaSyBmxmaGbI-oHnvbjTv_BXwYuHSGIqTj2UE'; // Sua chave da API
     let storedComments = [];
     let currentVideoId = '';
     let selectedWinner = null;
@@ -151,7 +155,6 @@
 
     function startCountdown() {
       const countdownEl = document.getElementById('countdown');
-      const sound = document.getElementById('confettiSound');
       let count = 5;
 
       document.getElementById('winner').style.display = 'none';
@@ -163,8 +166,9 @@
         if (count <= 0) {
           clearInterval(countdownInterval);
           countdownEl.textContent = '🎉';
-          sound.play();
-          confetti({ particleCount: 250, spread: 120, origin: { y: 0.6 } });
+
+          confetti({ particleCount: 300, spread: 130, origin: { y: 0.6 } });
+
           countdownEl.style.display = 'none';
           showWinner();
         } else {
