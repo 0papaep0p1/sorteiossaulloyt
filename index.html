@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sorteador de Comentários</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url('saullo.png') center center / cover no-repeat fixed;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      color: white;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin-top: 320px;
+      z-index: 10;
+    }
+
+    input[type="text"] {
+      padding: 12px;
+      width: 320px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 12px 24px;
+      background-color: rgb(8, 243, 39);
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #winner {
+      font-size: 24px;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
+      margin-top: 20px;
+      z-index: 999;
+      position: relative;
+      display: none;
+      text-shadow: 2px 2px 4px #000;
+    }
+
+    a.comment-link {
+      color: #00ffcc;
+      text-decoration: underline;
+      display: block;
+      margin-top: 10px;
+    }
+
+    #countdown {
+      font-size: 100px;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
+      display: none;
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 999;
+      text-shadow: 4px 4px #000;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="container">
+    <input type="text" id="videoUrl" placeholder="Cole o link do vídeo do YouTube aqui">
+    <button onclick="fetchComments()">Sortear</button>
+    <button onclick="repick()" id="repickBtn" style="display: none;">REPICK</button>
+    <div id="winner"></div>
+  </div>
+
+  <div id="countdown">5</div>
+
+  <audio id="confettiSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_8b89e8e48e.mp3?filename=party-horn-81830.mp3"></audio>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+  <script>
+    const apiKey = 'AIzaSyBmxmaGbI-oHnvbjTv_BXwYuHSGIqTj2UE'; // Sua API
+    let storedComments = [];
+    let currentVideoId = '';
+    let selectedWinner = null;
+
+    async function fetchComments() {
+      const videoUrl = document.getElementById('videoUrl').value;
+      const videoId = getVideoId(videoUrl);
+      currentVideoId = videoId;
+
+      if (!videoId) {
+        alert('Link inválido');
+        return;
+      }
+
+      let comments = [];
+      let nextPageToken = '';
+      try {
+        do {
+          const res = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?key=${apiKey}&textFormat=plainText&part=snippet&videoId=${videoId}&maxResults=100&pageToken=${nextPageToken}`);
+          const data = await res.json();
+
+          data.items.forEach(item => {
+            comments.push({
+              author: item.snippet.topLevelComment.snippet.authorDisplayName,
+              text: item.snippet.topLevelComment.snippet.textDisplay,
+              commentId: item.snippet.topLevelComment.id
+            });
+          });
+
+          nextPageToken = data.nextPageToken;
+        } while (nextPageToken);
+
+        if (comments.length === 0) {
+          alert('Nenhum comentário encontrado.');
+        } else {
+          storedComments = comments;
+          selectedWinner = comments[Math.floor(Math.random() * comments.length)];
+          startCountdown();
+          document.getElementById('repickBtn').style.display = 'block';
+        }
+
+      } catch (error) {
+        console.error('Erro ao buscar comentários:', error);
+        alert('Erro ao buscar comentários.');
+      }
+    }
+
+    function getVideoId(url) {
+      const match = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+      return match ? match[1] : null;
+    }
+
+    function startCountdown() {
+      const countdownEl = document.getElementById('countdown');
+      const sound = document.getElementById('confettiSound');
+      let count = 5;
+
+      document.getElementById('winner').style.display = 'none';
+      countdownEl.style.display = 'block';
+      countdownEl.textContent = count;
+
+      const countdownInterval = setInterval(() => {
+        count--;
+        if (count <= 0) {
+          clearInterval(countdownInterval);
+          countdownEl.textContent = '🎉';
+          sound.play();
+          confetti({ particleCount: 250, spread: 120, origin: { y: 0.6 } });
+          countdownEl.style.display = 'none';
+          showWinner();
+        } else {
+          countdownEl.textContent = count;
+        }
+      }, 1000);
+    }
+
+    function showWinner() {
+      const winner = selectedWinner;
+      const commentLink = `https://www.youtube.com/watch?v=${currentVideoId}&lc=${winner.commentId}`;
+
+      document.getElementById('winner').innerHTML = `
+        <p>🎊 <strong>${winner.author}</strong> comentou:</p>
+        <p>"${winner.text}"</p>
+        <a class="comment-link" href="${commentLink}" target="_blank">🔗 Ver comentário no YouTube</a>
+      `;
+      document.getElementById('winner').style.display = 'block';
+    }
+
+    function repick() {
+      if (storedComments.length > 0) {
+        selectedWinner = storedComments[Math.floor(Math.random() * storedComments.length)];
+        startCountdown();
+      }
+    }
+  </script>
+</body>
+</html>
